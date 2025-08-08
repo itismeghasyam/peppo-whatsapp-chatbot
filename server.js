@@ -8,6 +8,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.get('/test', (req, res) => {
+  res.json({ message: 'Test endpoint working!' });
+});
+
 // Basic health check endpoint
 app.get('/', (req, res) => {
   res.json({ 
