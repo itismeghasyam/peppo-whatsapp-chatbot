@@ -1,3 +1,79 @@
+// Add this at the top of your server.js file to properly use Railway's database services
+
+// PostgreSQL Configuration - Use Railway's DATABASE_URL first
+let dbConfig;
+if (process.env.DATABASE_URL) {
+  // Use Railway's PostgreSQL connection string
+  dbConfig = {
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  };
+} else {
+  // Fallback to individual environment variables
+  dbConfig = {
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  };
+}
+
+// Redis Configuration - Use Railway's REDIS_URL first
+let redisConfig;
+if (process.env.REDIS_URL) {
+  // Use Railway's Redis connection string
+  redisConfig = process.env.REDIS_URL;
+} else {
+  // Fallback to individual environment variables or localhost
+  redisConfig = {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: process.env.REDIS_PORT || 6379
+  };
+}
+
+console.log('Database Config:', {
+  usingDatabaseUrl: !!process.env.DATABASE_URL,
+  usingRedisUrl: !!process.env.REDIS_URL,
+  host: dbConfig.host || 'from DATABASE_URL',
+  database: dbConfig.database || 'from DATABASE_URL'
+});
+
+// Example of how to use these configs in your database initialization
+async function initializeDatabase() {
+  try {
+    const { Pool } = require('pg');
+    const pool = new Pool(dbConfig);
+    
+    // Test the connection
+    const client = await pool.connect();
+    console.log('✅ PostgreSQL connected successfully');
+    client.release();
+    
+    return pool;
+  } catch (error) {
+    console.error('Database initialization error:', error);
+    throw error;
+  }
+}
+
+async function initializeRedis() {
+  try {
+    const redis = require('redis');
+    const client = redis.createClient(redisConfig);
+    
+    await client.connect();
+    console.log('✅ Redis connected successfully');
+    
+    return client;
+  } catch (error) {
+    console.error('Redis initialization error:', error);
+    throw error;
+  }
+}
+
+
 require('dotenv').config();
 
 const express = require('express');
